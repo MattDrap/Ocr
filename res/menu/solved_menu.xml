@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/action_copy_solved"
+        android:orderInCategory="100"
+        android:title="@string/copy_solved"
+        android:showAsAction="ifRoom"/>
+  <item android:id="@+id/action_share_solved"
+        android:orderInCategory="100"
+        android:title="@string/share_solved"
+        android:showAsAction="ifRoom"/>    
+
+</menu>

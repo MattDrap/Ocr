@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+  <item android:id="@+id/action_copy_recognized"
+        android:orderInCategory="100"
+        android:title="@string/copy_recognized"
+        android:showAsAction="ifRoom"/>
+  <item android:id="@+id/action_share_recognized"
+        android:orderInCategory="100"
+        android:title="@string/share_recognized"
+        android:showAsAction="ifRoom"/>  
+</menu>
