@@ -2,6 +2,8 @@ package ocr.parser;
 
 import java.util.LinkedList;
 
+import ocr.solver.Utils;
+
 public class Parser {
 	/** the tokens to parse */
 	LinkedList<Token> tokens;
@@ -24,21 +26,8 @@ public class Parser {
 		Tokenizer tokenizer = Tokenizer.getExpressionTokenizer();
 		tokenizer.tokenize(expression);
 		LinkedList<Token> tokens = tokenizer.getTokens();
-                System.out.println(toStringTokens(tokens)); //Added
-                return tokens;
+        return tokens;
 	}
-        private String toStringTokens(LinkedList<Token> tokens){
-            StringBuilder sb = new StringBuilder();
-            for(Token t : tokens){
-                sb.append(t.pos);
-                sb.append("|");
-                sb.append(t.sequence);
-                sb.append("|");
-                sb.append(t.token);
-                sb.append("\n");
-            }
-            return sb.toString();
-        }
 	/**
 	 * Parse a mathematical expression in contained in a list of tokens and
 	 * return an ExpressionNode.
@@ -50,7 +39,7 @@ public class Parser {
 	 */
 	public ExpressionNode evaluate(LinkedList<Token> tokens) {
 		// implementing a recursive descent parser
-		this.tokens = (LinkedList<Token>) tokens.clone();
+		this.tokens = Utils.DeepCopySubList(tokens);
 		lookahead = this.tokens.getFirst();
 		// top level non-terminal is expression
 		ExpressionNode expr = expression();

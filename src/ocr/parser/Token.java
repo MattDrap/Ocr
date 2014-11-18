@@ -44,4 +44,10 @@ public class Token {
 		this.sequence = sequence;
 		this.pos = pos;
 	}
+	public Token(Token t){
+		super();
+		this.token = t.token;
+		this.sequence = t.sequence;
+		this.pos = t.pos;
+	}
 }

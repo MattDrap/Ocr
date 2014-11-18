@@ -31,30 +31,34 @@ public class AdditionExpressionNode extends SequenceExpressionNode {
 	 * 
 	 * All the terms are evaluated and added or subtracted from the total sum.
 	 */
-        @Override
+	@Override
 	public String getValue() {
 		double sum = 0.0;
-                String s = "";
+		StringBuilder s = new StringBuilder();
 		for (Term t : terms) {
-			if (t.positive)
-                            try{
-                                sum += Double.parseDouble(t.expression.getValue());
-                            }catch(NumberFormatException e){
-                                s += t.expression.getValue() + "+";
-                            }
-			else
-                            try{
-                                sum -= Double.parseDouble(t.expression.getValue());
-                            }catch(NumberFormatException e){
-                                s += t.expression.getValue() + "-";
-                            }
+			if (t.positive) {
+				try {
+					sum += Double.parseDouble(t.expression.getValue());
+				} catch (NumberFormatException e) {
+					s.append("+");
+					s.append(t.expression.getValue());
+				}
+			} else {
+				try {
+					sum -= Double.parseDouble(t.expression.getValue());
+				} catch (NumberFormatException e) {
+					s.append("-");
+					s.append(t.expression.getValue());
+				}
+			}
 		}
-                if(sum != 0.0){
-                    s += String.valueOf(sum);
-                }else{
-                    s = s.substring(0, s.length() - 1);
-                }
-		return s;
+		if (sum != 0.0) {
+			if (sum > 0) {
+				s.append("+");
+			}
+			s.append(String.valueOf(sum));
+		}
+		return s.toString();
 	}
 
 	/**

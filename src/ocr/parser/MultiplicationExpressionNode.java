@@ -23,7 +23,7 @@ public class MultiplicationExpressionNode extends SequenceExpressionNode {
 	 * Returns the type of the node, in this case
 	 * ExpressionNode.MULTIPLICATION_NODE
 	 */
-        @Override
+	@Override
 	public int getType() {
 		return ExpressionNode.MULTIPLICATION_NODE;
 	}
@@ -33,30 +33,31 @@ public class MultiplicationExpressionNode extends SequenceExpressionNode {
 	 * 
 	 * All the terms are evaluated and multiplied or divided to the product.
 	 */
-        @Override
+	@Override
 	public String getValue() {
-            double prod = 1.0;
-                String s = "";
+		double prod = 1.0;
+		StringBuilder s = new StringBuilder();
 		for (Term t : terms) {
 			if (t.positive)
-                            try{
-                                prod *= Double.parseDouble(t.expression.getValue());
-                            }catch(NumberFormatException e){
-                                s += t.expression.getValue() + "*";
-                            }
+				try {
+					prod *= Double.parseDouble(t.expression.getValue());
+				} catch (NumberFormatException e) {
+					s.append("*");
+					s.append(t.expression.getValue());
+				}
 			else
-                            try{
-                                prod /= Double.parseDouble(t.expression.getValue());
-                            }catch(NumberFormatException e){
-                                s += t.expression.getValue() + "/";
-                            }
+				try {
+					prod /= Double.parseDouble(t.expression.getValue());
+				} catch (NumberFormatException e) {
+					s.append("/");
+					s.append(t.expression.getValue());
+				}
 		}
-                if(prod != 1.0){
-                    s += String.valueOf(prod);
-                }else{
-                    s = s.substring(0, s.length() - 1);
-                }
-		return s;
+		if (prod != 1.0) {
+			return String.valueOf(prod) + s.toString();
+		} else {
+			return s.substring(1, s.length());
+		}
 	}
 
 	/**
@@ -68,7 +69,7 @@ public class MultiplicationExpressionNode extends SequenceExpressionNode {
 	 * @param visitor
 	 *            the visitor
 	 */
-        @Override
+	@Override
 	public void accept(ExpressionNodeVisitor visitor) {
 		visitor.visit(this);
 		for (Term t : terms)

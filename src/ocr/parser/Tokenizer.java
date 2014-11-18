@@ -4,6 +4,8 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ocr.solver.Utils;
+
 public class Tokenizer {
 	/**
 	 * Internal class holding the information about a token type.
@@ -131,6 +133,6 @@ public class Tokenizer {
 	 * @return a list of tokens to be fed to Parser
 	 */
 	public LinkedList<Token> getTokens() {
-		return tokens;
+		return Utils.DeepCopySubList(tokens);
 	}
 }
