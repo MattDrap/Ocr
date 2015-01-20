@@ -20,7 +20,8 @@ import ocr.CaptureActivity;
 import ocr.OcrResult;
 import ocr.camera.CameraManager;
 import ocr.wolfram.WolphramQueryResult;
-import edu.sfsu.cs.orange.ocr.R;
+import tul.ocr.R;
+import android.content.Intent;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
@@ -82,13 +83,11 @@ final class CaptureActivityHandler extends Handler {
 
   @Override
   public void handleMessage(Message message) {
-    
-    switch (message.what) {
-      case R.id.restart_preview:
-        restartOcrPreview();
-        break;
-      case R.id.ocr_continuous_decode_failed:
-        DecodeHandler.resetDecodeState();        
+    int message_what = message.what;
+    if(message_what == R.id.restart_preview){
+    	restartOcrPreview();
+    }else if(message_what == R.id.ocr_continuous_decode_failed){
+    	DecodeHandler.resetDecodeState();        
         try {
           activity.handleOcrContinuousDecode((OcrResultFailure) message.obj);
         } catch (NullPointerException e) {
@@ -97,30 +96,26 @@ final class CaptureActivityHandler extends Handler {
         if (state == State.CONTINUOUS) {
           restartOcrPreviewAndDecode();
         }
-        break;
-      case R.id.ocr_continuous_decode_succeeded:
-        DecodeHandler.resetDecodeState();
-        try {
-          activity.handleOcrContinuousDecode((OcrResult) message.obj);
-        } catch (NullPointerException e) {
-          // Continue
-        }
-        if (state == State.CONTINUOUS) {
-          restartOcrPreviewAndDecode();
-        }
-        break;
-      case R.id.ocr_decode_succeeded:
-        state = State.SUCCESS;
+    }else if(message_what == R.id.ocr_continuous_decode_succeeded){
+    	 DecodeHandler.resetDecodeState();
+         try {
+           activity.handleOcrContinuousDecode((OcrResult) message.obj);
+         } catch (NullPointerException e) {
+           // Continue
+         }
+         if (state == State.CONTINUOUS) {
+           restartOcrPreviewAndDecode();
+         }
+    }else if(message_what == R.id.ocr_decode_succeeded){
+    	state = State.SUCCESS;
         activity.setShutterButtonClickable(true);
         activity.handleOcrDecode((OcrResult) message.obj);
-        break;
-      case R.id.ocr_decode_failed:
-        state = State.PREVIEW;
+    }else if(message_what == R.id.ocr_decode_failed){
+    	state = State.PREVIEW;
         activity.setShutterButtonClickable(true);
         Toast toast = Toast.makeText(activity.getBaseContext(), "OCR failed. Please try again.", Toast.LENGTH_SHORT);
         toast.setGravity(Gravity.TOP, 0, 0);
         toast.show();
-        break;
     }
   }
   
@@ -227,6 +222,11 @@ final class CaptureActivityHandler extends Handler {
     // Disable further clicks on this button until OCR request is finished
     activity.setShutterButtonClickable(false);
     ocrDecode();
+  }
+  
+  void loadBitmap(String filepath){
+	Message message = decodeThread.getHandler().obtainMessage(R.id.ocr_decode_bitmap, filepath);
+	message.sendToTarget();
   }
 
 }

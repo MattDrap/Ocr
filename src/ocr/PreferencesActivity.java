@@ -17,6 +17,7 @@
 package ocr;
 
 import ocr.language.LanguageCodeHelper;
+import tul.ocr.R;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
@@ -24,7 +25,6 @@ import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import edu.sfsu.cs.orange.ocr.R;
 /**
  * Class to handle preferences that are saved across sessions of the app. Shows
  * a hierarchy of preferences to the user, organized into sections. These
@@ -40,13 +40,14 @@ public class PreferencesActivity extends PreferenceActivity implements
   public static final String WOLPHRAM_ALPHA_PID = "UA9KKR-XQXPXUPGA3";
   // Preference keys not carried over from ZXing project
   public static final String KEY_SOURCE_LANGUAGE_PREFERENCE = "sourceLanguageCodeOcrPref";
-  public static final String KEY_TOGGLE_MATH = "preference_translation_toggle_math";
+  public static final String KEY_TOGGLE_ALGEBRA_MATRIX = "preference_translation_toggle_math";
   public static final String KEY_CONTINUOUS_PREVIEW = "preference_capture_continuous";
   public static final String KEY_PAGE_SEGMENTATION_MODE = "preference_page_segmentation_mode";
   public static final String KEY_OCR_ENGINE_MODE = "preference_ocr_engine_mode";
   public static final String KEY_CHARACTER_BLACKLIST = "preference_character_blacklist";
   public static final String KEY_CHARACTER_WHITELIST = "preference_character_whitelist";
   public static final String KEY_TOGGLE_LIGHT = "preference_toggle_light";
+  public static final String KEY_TOGGLE_SUPERSCRIPTS = "preference_toggle_superscript";
   
   // Preference keys carried over from ZXing project
   public static final String KEY_AUTO_FOCUS = "preferences_auto_focus";
@@ -140,6 +141,11 @@ public class PreferencesActivity extends PreferenceActivity implements
       // Set the summary text
       editTextPreferenceCharacterWhitelist.setSummary(sharedPreferences.getString(key, OcrCharacterHelper.getDefaultWhitelist(listPreferenceSourceLanguage.getValue())));
       
+    } else if(key.equals(KEY_TOGGLE_ALGEBRA_MATRIX)){
+    	
+    	boolean math = sharedPreferences.getBoolean(KEY_TOGGLE_ALGEBRA_MATRIX, CaptureActivity.DEFAULT_TOGGLE_ALGEBRA_MATRIX);
+    	getPreferenceScreen().findPreference(KEY_TOGGLE_SUPERSCRIPTS).setEnabled(math);
+    	
     }
         
   }

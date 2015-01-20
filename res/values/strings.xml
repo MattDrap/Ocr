@@ -16,7 +16,7 @@
  limitations under the License.
  -->
 <resources>
-    <string name="app_name">OCR Test</string>
+    <string name="app_name">OCRCalculator</string>
     <string name="settings">Settings</string>
     <string name="about">about</string>
     <string name="load_image">Load image</string>
@@ -24,4 +24,5 @@
     <string name="share_recognized">Share recognized text</string>
     <string name="copy_solved">Copy solved text</string>
     <string name="share_solved">Share solved text</string>
+    <string name="pick_matrix_options">Pick a option for matrix</string>
 </resources>

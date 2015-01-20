@@ -34,7 +34,9 @@
 	<PreferenceCategory android:title="Math settings">
 
 		<CheckBoxPreference android:key="preference_translation_toggle_math"
-			android:title="Solve"/>
+			android:title="Algebra mode / Matrix mode"/>
+		<CheckBoxPreference android:key="preference_toggle_superscript"
+		    android:title="Transform numbers after variables to superscripts"/>
 						
 	</PreferenceCategory>
 
@@ -64,12 +66,10 @@
                 
         <EditTextPreference android:key="preference_character_whitelist"
             android:title="Character whitelist"/>
-
-<!-- 
+ 
 		<CheckBoxPreference
 		    android:key="preference_toggle_light"
 		    android:title="Light"/>
--->
 
 	    <ListPreference android:key="preference_page_segmentation_mode"
 			android:title="Page segmentation"

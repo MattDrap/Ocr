@@ -2,9 +2,12 @@ package ocr.parser;
 
 import java.util.LinkedList;
 
-import ocr.solver.Utils;
+import ocr.solver.helper.Utils;
 
 public class Parser {
+	public static Parser parser = new Parser();
+	private Parser(){
+	}
 	/** the tokens to parse */
 	LinkedList<Token> tokens;
 	/** the next token */
@@ -61,18 +64,13 @@ public class Parser {
 	private ExpressionNode sumOp(ExpressionNode expr) {
 		// sum_op -> PLUSMINUS term sum_op
 		if (lookahead.token == Token.PLUSMINUS) {
-			AdditionExpressionNode sum;
 			// This means we are actually dealing with a sum
-			// If expr is not already a sum, we have to create one
-			if (expr.getType() == ExpressionNode.ADDITION_NODE)
-				sum = (AdditionExpressionNode) expr;
-			else
-				sum = new AdditionExpressionNode(expr, true);
 			// reduce the input and recursively call sum_op
 			boolean positive = lookahead.sequence.equals("+");
+			AdditionExpressionNode sum = new AdditionExpressionNode(expr, positive);
 			nextToken();
 			ExpressionNode t = term();
-			sum.add(t, positive);
+			sum.addRight(t);
 			return sumOp(sum);
 		}
 		// sum_op -> EPSILON
@@ -106,18 +104,13 @@ public class Parser {
 	private ExpressionNode termOp(ExpressionNode expression) {
 		// term_op -> MULTDIV factor term_op
 		if (lookahead.token == Token.MULTDIV) {
-			MultiplicationExpressionNode prod;
 			// This means we are actually dealing with a product
-			// If expr is not already a PRODUCT, we have to create one
-			if (expression.getType() == ExpressionNode.MULTIPLICATION_NODE)
-				prod = (MultiplicationExpressionNode) expression;
-			else
-				prod = new MultiplicationExpressionNode(expression, true);
 			// reduce the input and recursively call sum_op
 			boolean positive = lookahead.sequence.equals("*");
+			MultiplicationExpressionNode prod = new MultiplicationExpressionNode(expression, positive);
 			nextToken();
 			ExpressionNode f = signedFactor();
-			prod.add(f, positive);
+			prod.addRight(f);
 			return termOp(prod);
 		}
 		// term_op -> EPSILON

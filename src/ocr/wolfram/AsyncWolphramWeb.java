@@ -12,12 +12,12 @@ import ocr.solver.ProcessText;
 
 import org.xmlpull.v1.XmlPullParserException;
 
+import tul.ocr.R;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.TextView;
-import edu.sfsu.cs.orange.ocr.R;
 
 public class AsyncWolphramWeb extends AsyncTask<Void, Void, Boolean> {
 	private static final String TAG = AsyncWolphramWeb.class.getSimpleName();

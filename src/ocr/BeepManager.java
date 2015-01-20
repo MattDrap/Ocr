@@ -27,7 +27,7 @@ import android.util.Log;
 
 import java.io.IOException;
 
-import edu.sfsu.cs.orange.ocr.R;
+import tul.ocr.R;
 
 /**
  * Manages beeps and vibrations for {@link CaptureActivity}.

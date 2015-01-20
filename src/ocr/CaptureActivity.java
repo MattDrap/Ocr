@@ -19,29 +19,28 @@ package ocr;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 import ocr.camera.CameraManager;
 import ocr.camera.ShutterButton;
 import ocr.language.LanguageCodeHelper;
-import ocr.parser.ExpressionNode;
-import ocr.parser.Parser;
 import ocr.solver.AsyncAnalyzeSolve;
-import ocr.solver.ProcessText;
-import ocr.wolfram.AsyncWolphramWeb;
+import tul.ocr.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -62,15 +61,16 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
 
-import edu.sfsu.cs.orange.ocr.R;
 
 /**
  * This activity opens the camera and does the actual scanning on a background thread. It draws a
@@ -80,7 +80,7 @@ import edu.sfsu.cs.orange.ocr.R;
  * The code for this class was adapted from the ZXing project: http://code.google.com/p/zxing/
  */
 public final class CaptureActivity extends Activity implements SurfaceHolder.Callback, 
-  ShutterButton.OnShutterButtonListener {
+  ShutterButton.OnShutterButtonListener, OnClickListener {
 
   private static final String TAG = CaptureActivity.class.getSimpleName();
   
@@ -111,11 +111,12 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   public static final boolean DEFAULT_TOGGLE_REVERSED_IMAGE = false;
   
   /** Whether to enable the use of online translation services be default. */
-  public static final boolean DEFAULT_TOGGLE_MATH = true;
+  public static final boolean DEFAULT_TOGGLE_ALGEBRA_MATRIX = true;
   
   /** Whether the light should be initially activated by default. */
   public static final boolean DEFAULT_TOGGLE_LIGHT = false;
 
+  public static final boolean DEFAULT_TOGGLE_SUPERSCRIPTS = true;
   
   /** Flag to display the real-time recognition results at the top of the scanning screen. */
   private static final boolean CONTINUOUS_DISPLAY_RECOGNIZED_TEXT = true;
@@ -125,6 +126,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   
   /** Flag to enable display of the on-screen shutter button. */
   private static final boolean DISPLAY_SHUTTER_BUTTON = true;
+  /** Flag to enable display of the on-screen torch button */
+  private static final boolean DISPLAY_TORCH_BUTTON = true;
   
   /** Languages for which Cube data is available. */
   static final String[] CUBE_SUPPORTED_LANGUAGES = { 
@@ -174,7 +177,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   private String characterBlacklist;
   private String characterWhitelist;
   private ShutterButton shutterButton;
-  private boolean isSolvingActive; // Whether we want to show math
+  private ToggleButton torchButton;
   private boolean isContinuousModeActive; // Whether we are doing OCR in continuous mode
   private SharedPreferences prefs;
   private OnSharedPreferenceChangeListener listener;
@@ -201,6 +204,13 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   public void onCreate(Bundle icicle) {
     super.onCreate(icicle);
     
+    //TO-DO does this better
+    Locale locale = Locale.ENGLISH;
+    Locale.setDefault(locale);
+    Configuration config = new Configuration();
+    config.locale = locale;
+    getBaseContext().getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
+    //
     checkFirstLaunch();
     
     if (isFirstLaunch) {
@@ -229,6 +239,11 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     if (DISPLAY_SHUTTER_BUTTON) {
       shutterButton = (ShutterButton) findViewById(R.id.shutter_button);
       shutterButton.setOnShutterButtonListener(this);
+    }
+    //Camera torch button
+    if(DISPLAY_TORCH_BUTTON){
+    	torchButton = (ToggleButton) findViewById(R.id.torch_button);
+    	torchButton.setOnClickListener(this);
     }
    
     ocrResultView = (TextView) findViewById(R.id.ocr_result_text_view);
@@ -332,7 +347,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     
     String previousSourceLanguageCodeOcr = sourceLanguageCodeOcr;
     int previousOcrEngineMode = ocrEngineMode;
-    
     retrievePreferences();
     
     // Set up the camera preview surface.
@@ -540,31 +554,24 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     Intent intent;
-    switch (item.getItemId()) {
-	    case R.id.action_settings: {
-	      intent = new Intent().setClass(this, PreferencesActivity.class);
+    int item_id = item.getItemId();
+    if(item_id == R.id.action_settings){
+    	  intent = new Intent().setClass(this, PreferencesActivity.class);
 	      startActivity(intent);
-	      break;
-	    }
-	    case R.id.action_about: {
-	      intent = new Intent(this, HelpActivity.class);
+    }else if(item_id == R.id.action_about){
+    	intent = new Intent(this, HelpActivity.class);
 	      intent.putExtra(HelpActivity.REQUESTED_PAGE_KEY, HelpActivity.ABOUT_PAGE);
 	      startActivity(intent);
-	      break;
-	    }
-	    case R.id.action_load_image:{
-	    	filedialog = new FileDialog(this,Environment.getExternalStorageDirectory().getAbsolutePath());
-	    	filedialog.addFileListener(new ocr.FileDialog.FileSelectedListener() {
-				
-				@Override
-				public void fileSelected(File file) {
-			    	//TODO after file is selected
-					Toast.makeText(getApplicationContext(), "This Feature is not implemented yet", Toast.LENGTH_LONG).show();
-				}
-			});
-	    	filedialog.showDialog();
-	    	return true;
-	    }
+    }else if(item_id == R.id.action_load_image){
+    	filedialog = new FileDialog(this,Environment.getExternalStorageDirectory().getAbsolutePath());
+    	filedialog.addFileListener(new ocr.FileDialog.FileSelectedListener() {
+			
+			@Override
+			public void fileSelected(File file) {
+		    	handler.loadBitmap(file.getAbsolutePath());
+			}
+		});
+    	filedialog.showDialog();
     }
     return super.onOptionsItemSelected(item);
   }
@@ -749,7 +756,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     TextView translationLanguageLabelTextView = (TextView) findViewById(R.id.translation_language_label_text_view);
     TextView translationLanguageTextView = (TextView) findViewById(R.id.translation_language_text_view);
     TextView translationTextView = (TextView) findViewById(R.id.translation_text_view);
-    if (isSolvingActive) {
+    
       // Handle translation text fields
       translationLanguageLabelTextView.setVisibility(View.VISIBLE);
 
@@ -761,15 +768,13 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       // Get the translation asynchronously
       	//new AsyncWolphramWeb(this, ocrResult.getText()).execute();
       	//Parser p = new Parser();
-      	new AsyncAnalyzeSolve(this, ocrResult).execute();
+      	boolean superscripts = prefs.getBoolean(PreferencesActivity.KEY_TOGGLE_SUPERSCRIPTS, CaptureActivity.DEFAULT_TOGGLE_SUPERSCRIPTS);
+      	boolean math = prefs.getBoolean(PreferencesActivity.KEY_TOGGLE_ALGEBRA_MATRIX, CaptureActivity.DEFAULT_TOGGLE_ALGEBRA_MATRIX);
+      	if(!math){
+      		showMatrixOptionPicker(this, ocrResult);
+      	}else
+      		new AsyncAnalyzeSolve(this, ocrResult, math, superscripts, -1).execute();
       	
-    } else {
-      translationLanguageLabelTextView.setVisibility(View.GONE);
-      translationLanguageTextView.setVisibility(View.GONE);
-      translationTextView.setVisibility(View.GONE);
-      progressView.setVisibility(View.GONE);
-      setProgressBarVisibility(false);
-    }
     return true;
   }
   
@@ -880,39 +885,36 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
   @Override
   public boolean onContextItemSelected(MenuItem item) {
     ClipboardManager clipboardManager = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-    switch (item.getItemId()) {
-
-    case R.id.action_copy_recognized:
-        clipboardManager.setText(ocrResultView.getText());
-      if (clipboardManager.hasText()) {
-        Toast toast = Toast.makeText(this, "Text copied.", Toast.LENGTH_LONG);
-        toast.setGravity(Gravity.BOTTOM, 0, 0);
-        toast.show();
-      }
-      return true;
-    case R.id.action_share_recognized:
+    int item_id = item.getItemId();
+    if(item_id == R.id.action_copy_recognized){
+    	clipboardManager.setText(ocrResultView.getText());
+        if (clipboardManager.hasText()) {
+          Toast toast = Toast.makeText(this, "Text copied.", Toast.LENGTH_LONG);
+          toast.setGravity(Gravity.BOTTOM, 0, 0);
+          toast.show();
+        }
+        return true;
+    }else if(item_id == R.id.action_share_recognized){
     	Intent shareRecognizedTextIntent = new Intent(android.content.Intent.ACTION_SEND);
     	shareRecognizedTextIntent.setType("text/plain");
     	shareRecognizedTextIntent.putExtra(android.content.Intent.EXTRA_TEXT, ocrResultView.getText());
     	startActivity(Intent.createChooser(shareRecognizedTextIntent, "Share via"));
     	return true;
-    case R.id.action_copy_solved:
-        clipboardManager.setText(translationView.getText());
-      if (clipboardManager.hasText()) {
-        Toast toast = Toast.makeText(this, "Text copied.", Toast.LENGTH_LONG);
-        toast.setGravity(Gravity.BOTTOM, 0, 0);
-        toast.show();
-      }
-      return true;
-    case R.id.action_share_solved:
+    }else if(item_id == R.id.action_copy_solved){
+    	 clipboardManager.setText(translationView.getText());
+         if (clipboardManager.hasText()) {
+           Toast toast = Toast.makeText(this, "Text copied.", Toast.LENGTH_LONG);
+           toast.setGravity(Gravity.BOTTOM, 0, 0);
+           toast.show();
+         }
+    }else if(item_id == R.id.action_share_solved){
     	Intent shareTranslatedTextIntent = new Intent(android.content.Intent.ACTION_SEND);
     	shareTranslatedTextIntent.setType("text/plain");
     	shareTranslatedTextIntent.putExtra(android.content.Intent.EXTRA_TEXT, translationView.getText());
     	startActivity(Intent.createChooser(shareTranslatedTextIntent, "Share via"));
     	return true;
-    default:
-      return super.onContextItemSelected(item);
     }
+    return super.onContextItemSelected(item);
   }
 
   /**
@@ -1073,7 +1075,6 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
       // Retrieve from preferences, and set in this Activity, the language preferences
       PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
       setSourceLanguage(prefs.getString(PreferencesActivity.KEY_SOURCE_LANGUAGE_PREFERENCE, CaptureActivity.DEFAULT_SOURCE_LANGUAGE_CODE));
-      isSolvingActive = prefs.getBoolean(PreferencesActivity.KEY_TOGGLE_MATH, false);
       
       // Retrieve from preferences, and set in this Activity, the capture mode preference
       if (prefs.getBoolean(PreferencesActivity.KEY_CONTINUOUS_PREVIEW, CaptureActivity.DEFAULT_TOGGLE_CONTINUOUS)) {
@@ -1137,7 +1138,7 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
     // Recognition language
     prefs.edit().putString(PreferencesActivity.KEY_SOURCE_LANGUAGE_PREFERENCE, CaptureActivity.DEFAULT_SOURCE_LANGUAGE_CODE).commit();
     // Toggle math
-    prefs.edit().putBoolean(PreferencesActivity.KEY_TOGGLE_MATH, CaptureActivity.DEFAULT_TOGGLE_MATH).commit();
+    prefs.edit().putBoolean(PreferencesActivity.KEY_TOGGLE_ALGEBRA_MATRIX, CaptureActivity.DEFAULT_TOGGLE_ALGEBRA_MATRIX).commit();
     // OCR Engine
     prefs.edit().putString(PreferencesActivity.KEY_OCR_ENGINE_MODE, CaptureActivity.DEFAULT_OCR_ENGINE_MODE).commit();
 
@@ -1166,6 +1167,8 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 
     // Light
     prefs.edit().putBoolean(PreferencesActivity.KEY_TOGGLE_LIGHT, CaptureActivity.DEFAULT_TOGGLE_LIGHT).commit();
+    // Superscript
+    prefs.edit().putBoolean(PreferencesActivity.KEY_TOGGLE_SUPERSCRIPTS, CaptureActivity.DEFAULT_TOGGLE_SUPERSCRIPTS).commit();
   }
   
   void displayProgressDialog() {
@@ -1200,4 +1203,20 @@ public final class CaptureActivity extends Activity implements SurfaceHolder.Cal
 	    .setPositiveButton( "Done", new FinishListener(this))
 	    .show();
   }
+
+	@Override
+	public void onClick(View v) {
+		if(v instanceof ToggleButton){
+			boolean light = prefs.getBoolean(PreferencesActivity.KEY_TOGGLE_LIGHT, CaptureActivity.DEFAULT_TOGGLE_LIGHT);
+			prefs.edit().putBoolean(PreferencesActivity.KEY_TOGGLE_LIGHT, !light).commit();
+			resumeOCR();
+		}
+	}
+	public AlertDialog showMatrixOptionPicker(final CaptureActivity activity, final OcrResult ocrResult){
+		return new AlertDialog.Builder(this).setTitle(R.string.pick_matrix_options)
+	    		.setItems(R.array.matrixoptions, new DialogInterface.OnClickListener() {
+	        public void onClick(DialogInterface dialog, int which) {
+	        	new AsyncAnalyzeSolve(activity, ocrResult, false, false, which).execute();	
+	    	}}).show();
+	}
 }

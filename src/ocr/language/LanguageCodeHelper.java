@@ -15,11 +15,11 @@
  */
 package ocr.language;
 
+import tul.ocr.R;
 import android.content.Context;
 import android.content.res.Resources;
 import android.util.Log;
 
-import edu.sfsu.cs.orange.ocr.R;
 
 /**
  * Class for handling functions relating to converting between standard language

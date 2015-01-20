@@ -1,11 +1,6 @@
 package ocr.parser;
 
-public class AdditionExpressionNode extends SequenceExpressionNode {
-	/**
-	 * Default constructor.
-	 */
-	public AdditionExpressionNode() {
-	}
+public class AdditionExpressionNode extends BinaryExpressionNode {
 
 	/**
 	 * Constructor to create an addition with the first term already added.
@@ -33,32 +28,27 @@ public class AdditionExpressionNode extends SequenceExpressionNode {
 	 */
 	@Override
 	public String getValue() {
-		double sum = 0.0;
 		StringBuilder s = new StringBuilder();
-		for (Term t : terms) {
-			if (t.positive) {
-				try {
-					sum += Double.parseDouble(t.expression.getValue());
-				} catch (NumberFormatException e) {
-					s.append("+");
-					s.append(t.expression.getValue());
-				}
-			} else {
-				try {
-					sum -= Double.parseDouble(t.expression.getValue());
-				} catch (NumberFormatException e) {
-					s.append("-");
-					s.append(t.expression.getValue());
-				}
-			}
-		}
-		if (sum != 0.0) {
-			if (sum > 0) {
-				s.append("+");
-			}
-			s.append(String.valueOf(sum));
-		}
-		return s.toString();
+        
+        StringOrNumber leftyson = StringOrNumber.parseExpression(left);
+        StringOrNumber rightyson = StringOrNumber.parseExpression(right);
+        
+       
+        if(leftyson.changedNumber && rightyson.changedNumber){
+              
+                if(positive)
+                    return String.valueOf(leftyson.d + rightyson.d);
+                else
+                    return String.valueOf(leftyson.d - rightyson.d);
+        }
+        s.append(leftyson.s);
+        if(positive){
+            s.append("+");
+        }else{
+            s.append("-");
+        }
+        s.append(rightyson.s);
+        return s.toString();
 	}
 
 	/**
@@ -72,7 +62,7 @@ public class AdditionExpressionNode extends SequenceExpressionNode {
 	 */
 	public void accept(ExpressionNodeVisitor visitor) {
 		visitor.visit(this);
-		for (Term t : terms)
-			t.expression.accept(visitor);
+		left.accept(visitor);
+		right.accept(visitor);
 	}
 }

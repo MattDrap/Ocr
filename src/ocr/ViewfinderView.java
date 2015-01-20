@@ -19,7 +19,7 @@ package ocr;
 import java.util.List;
 
 import ocr.camera.CameraManager;
-import edu.sfsu.cs.orange.ocr.R;
+import tul.ocr.R;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;

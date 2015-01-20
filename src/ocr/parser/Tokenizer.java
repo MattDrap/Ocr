@@ -4,7 +4,7 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import ocr.solver.Utils;
+import ocr.solver.helper.Utils;
 
 public class Tokenizer {
 	/**

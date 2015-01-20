@@ -6,152 +6,183 @@ import java.util.LinkedList;
 import ocr.parser.ExpressionNode;
 import ocr.parser.Parser;
 import ocr.parser.Token;
-import Jama.Matrix;
+import ocr.solver.helper.ColumnAndTokens;
+import ocr.solver.helper.RemovePair;
+import ocr.solver.helper.TokenHelper;
+import ocr.solver.helper.Utils;
 
-public class LinearEquationsSolver implements ExampleSolver {
+public class LinearEquationsSolver implements IExampleSolver {
 	private Matrix Matrix = null;
 	private Matrix rightHandSide = null;
 	Parser parser;
+	ArrayList<Equation> list_equations;
+	ArrayList<String> variables;
+
 	public LinearEquationsSolver(ArrayList<Equation> list_equations) {
-		parser = new Parser();
-		ArrayList<ArrayList<Double>> all_members = new ArrayList<ArrayList<Double>>();
-		ArrayList<Double> right_side_members = new ArrayList<Double>();
-		for(Equation equation : list_equations){
-			ArrayList<Double> column_members = detectLinearMembers(equation.getLeft_side());
-			if(equation.getRight_side() != null){
-				ExpressionNode exp = parser.evaluate(equation.getRight_side());
-				double member = Double.parseDouble(exp.getValue());
-				right_side_members.add(member);
-			}
-			all_members.add(column_members);
-		}
-		Matrix = fillToMatrix(all_members, list_equations.size());
-		rightHandSide = fillToVector(right_side_members);
-		
+		parser = Parser.parser;
+		this.list_equations = list_equations;
 	}
-	private ArrayList<String> Analyze(LinkedList<Token> tokens){
+
+	private ArrayList<String> analyze(ArrayList<Equation> equations) {
+		ArrayList<String> variables = new ArrayList<>();
+		ArrayList<String> eq_vars;
+		for (Equation equation : equations) {
+			if (equation.getRight_side() != null) {
+				LinkedList<Token> temp = Utils.DeepCopySubList(equation
+						.getLeft_side());
+				LinkedList<Token> temp2 = Utils.DeepCopySubList(equation
+						.getRight_side());
+				temp.addAll(temp2);
+				eq_vars = analyze(temp);
+			} else {
+				eq_vars = analyze(equation.getLeft_side());
+			}
+			for (String var : eq_vars) {
+				if (find_Variable(variables, var) < 0) {
+					variables.add(var);
+				}
+			}
+		}
+		return variables;
+	}
+
+	private ArrayList<String> analyze(LinkedList<Token> tokens) {
 		ArrayList<String> strings = new ArrayList<>();
-		for(Token token : tokens){
-			if(token.token == Token.VARIABLE){
+		for (Token token : tokens) {
+			if (token.token == Token.VARIABLE) {
 				strings.add(token.sequence);
 			}
 		}
 		return strings;
 	}
-	private int find_Variable(ArrayList<String> vars, String var_sequence){
-		for(int i = 0; i < vars.size(); i++){
-			if(var_sequence.toLowerCase().compareToIgnoreCase(vars.get(i)) == 0){
+
+	private int find_Variable(ArrayList<String> vars, String var_sequence) {
+		for (int i = 0; i < vars.size(); i++) {
+			if (var_sequence.toLowerCase().compareToIgnoreCase(vars.get(i)) == 0) {
 				return i;
 			}
 		}
 		return -1;
 	}
-	private double [] detectLinearColumnMembers(LinkedList<Token> tokens, ArrayList<String> vars) throws IllegalArgumentException{
-		if(vars.size() < 1){
-			throw new IllegalArgumentException();
-		}
-		double [] column_mem = new double[vars.size()];
-        for(int i = 0; i < tokens.size()-2; i++){
-            if(tokens.get(i).token == Token.VARIABLE){
-            	int index = find_Variable(vars, tokens.get(i).sequence);
-            	if(index >= 0){
-	                if(i < tokens.size() && tokens.get(i+1).token == Token.MULTDIV){
-	                    try{
-	                        double d = Double.parseDouble(tokens.get(i+2).sequence);
-	                        column_mem[index] = d;
-	                    }catch(NumberFormatException e){
-	                        throw new IllegalArgumentException();
-	                    }
-	                }else{
-	                	column_mem[index] = 1.0;
-	                }
-            	}
-            }
-        }
-        if(tokens.get(tokens.size() - 1).token == Token.VARIABLE){
-            int index = find_Variable(vars, tokens.get(tokens.size() - 1).sequence);
-            if(index >= 0){
-            	column_mem[index] = 1.0;
-            }
-        }
-        return column_mem;
-    }
-    private Matrix fillToVector(ArrayList<Double> right_side_members) {
-    	double [] array_vector = new double[right_side_members.size()];
-    	for(int i = 0; i < right_side_members.size(); i++){
-    		array_vector[i] = right_side_members.get(i);
-    	}
-		return new Matrix(array_vector, 1);
-	}
-	public ArrayList<Double> detectLinearMembers(LinkedList<Token> tokens){
-        ArrayList<Double> list = new ArrayList<>();
-        for(int i = 0; i < tokens.size()-1; i++){
-            if(tokens.get(i).token == Token.VARIABLE){
-                if(i < tokens.size() && tokens.get(i+1).token == Token.MULTDIV){
-                    try{
-                        Double d = Double.parseDouble(tokens.get(i+2).sequence);
-                        list.add(d);
-                    }catch(NumberFormatException e){
-                        throw new IllegalArgumentException();
-                    }
-                }else{
-                	list.add(1.0);
-                }
-            }
-        }
-        if(tokens.get(tokens.size() - 1).token == Token.VARIABLE){
-            list.add(1.0);
-        }
-        return list;
-    }
-    public Matrix fillToMatrix(ArrayList<ArrayList<Double>> members, int rows) throws IllegalArgumentException{
-        if(rows < 1)
-            throw new IllegalArgumentException();
-        int columns = members.get(0).size();
-        if(columns < 1)
-            throw new IllegalArgumentException();
-        double [][] double_matrix = new double[rows][columns];
-        for(int i = 0; i < rows; i++){
-            for(int j = 0; j < columns; j++){
-                double_matrix[i][j] = members.get(i).get(j);
-            }
-        }
-        Matrix local_matrix = null;
-        try{
-        	local_matrix = new Matrix(double_matrix);
-        }catch(IllegalArgumentException e){
-        	
-        }
-        catch(Exception e){
-        	
-        }
-        return local_matrix;
-    }
-	@Override
-	public String calculate() throws NotImplementedException {
-		Jama.LUDecomposition LU = new Jama.LUDecomposition(Matrix);
-		if(rightHandSide == null){
-			int colCount = Matrix.getColumnDimension();
-			double [] prerighthand = new double [colCount];
-			for(int i = 0; i < colCount; i++){
-				prerighthand[i] = 0;
-			}
-			rightHandSide = new Jama.Matrix(prerighthand, 1);
-		}
-		try{
-			Matrix ret = LU.solve(rightHandSide.transpose());
-			double [] [] dret = ret.getArray();
-			StringBuilder sb = new StringBuilder();
-			for(int i = 0; i < dret.length; i++){
-				for(int j = 0; j < dret[i].length; j++){
-					sb.append(dret[i][j]);
-					sb.append(" | ");
+	private ColumnAndTokens detectLinearColumnMembers(
+			LinkedList<Token> left_side, ArrayList<String> vars) {
+		double[] column_mem = new double[vars.size()];
+		ArrayList<RemovePair> list_of_removes = new ArrayList<RemovePair>();
+		for (int i = 0; i < left_side.size(); i++) {
+			if (left_side.get(i).token == Token.VARIABLE) {
+				int index = find_Variable(vars, left_side.get(i).sequence);
+				if (index >= 0) {
+					int pos = TokenHelper.detectAdditionToken(left_side, i);
+					if (pos >= 0) {
+						list_of_removes.add(new RemovePair(pos, i + 1));
+						LinkedList<Token> subtokens = Utils.DeepCopySubList(
+								left_side, pos, i);
+							subtokens.add(new Token(Token.NUMBER, "1", i));
+						ExpressionNode exp = parser.evaluate(subtokens);
+						String s = exp.getValue();
+						double d = Double.parseDouble(s);
+						column_mem[index] += d;
+					}
 				}
-				sb.append("\n");
 			}
-			return sb.toString();
-		}catch(Exception e){
-			throw new NotImplementedException("Not implemented yet" + e.getMessage());
 		}
+		left_side = TokenHelper.removeMembers(list_of_removes, left_side);
+		return new ColumnAndTokens(left_side, null, column_mem);
+	}
+	
+	private ColumnAndTokens detectLinearColumnMembers(
+			LinkedList<Token> left_side, LinkedList<Token> right_side,
+			ArrayList<String> vars) {
+		double[] column_mem = new double[vars.size()];
+		ArrayList<RemovePair> list_of_removes = new ArrayList<RemovePair>();
+		for (int i = 0; i < left_side.size(); i++) {
+			if (left_side.get(i).token == Token.VARIABLE) {
+				int index = find_Variable(vars, left_side.get(i).sequence);
+				if (index >= 0) {
+					int pos = TokenHelper.detectAdditionToken(left_side, i);
+					if (pos >= 0) {
+						list_of_removes.add(new RemovePair(pos, i + 1));
+						LinkedList<Token> subtokens = Utils.DeepCopySubList(
+								left_side, pos, i);
+						subtokens.add(new Token(Token.NUMBER, "1", i));
+						ExpressionNode exp = parser.evaluate(subtokens);
+						String s = exp.getValue();
+						double d = Double.parseDouble(s);
+						column_mem[index] += d;
+					}
+				}
+			}
+		}
+		left_side = TokenHelper.removeMembers(list_of_removes, left_side);
+		list_of_removes.clear();
+		for (int i = 0; i < right_side.size(); i++) {
+			if (right_side.get(i).token == Token.VARIABLE) {
+				int index = find_Variable(vars, right_side.get(i).sequence);
+				if (index >= 0) {
+					int pos = TokenHelper.detectAdditionToken(right_side, i);
+					if (pos >= 0) {
+						list_of_removes.add(new RemovePair(pos, i + 1));
+						LinkedList<Token> subtokens = Utils.DeepCopySubList(
+								right_side, pos, i);
+						subtokens.add(new Token(Token.NUMBER, "1", i));
+						ExpressionNode exp = parser.evaluate(subtokens);
+						String s = exp.getValue();
+						double d = Double.parseDouble(s);
+						column_mem[index] -= d;
+					}
+				}
+			}
+		}
+		right_side = TokenHelper.removeMembers(list_of_removes, right_side);
+		return new ColumnAndTokens(left_side, right_side, column_mem);
+	}
+
+	@Override
+	public String calculate() throws NotImplementedException {	
+		try{
+			GaussJordan gj = new GaussJordan(Matrix, rightHandSide);
+			gj.Solve();
+			return gj.getSolution(variables);
+		} catch (Exception e) {
+			throw new NotImplementedException("Not implemented yet"
+					+ e.getMessage());
+		}
+	}
+
+	@Override
+	public void prepare() {
+		variables = analyze(list_equations);
+		double[][] all_members = new double[list_equations.size()][variables
+				.size()];
+		double[] right_side = new double[list_equations.size()];
+		for (int i = 0; i < list_equations.size(); i++) {
+			ColumnAndTokens colAndtok;
+			if (list_equations.get(i).getRight_side() != null) {
+				colAndtok = detectLinearColumnMembers(list_equations.get(i)
+						.getLeft_side(), list_equations.get(i).getRight_side(),
+						variables);
+				list_equations.get(i).setRight_side(colAndtok.Right_Tokens);
+			} else {
+				colAndtok = detectLinearColumnMembers(list_equations.get(i)
+						.getLeft_side(), variables);
+			}
+			list_equations.get(i).setLeft_side(colAndtok.Left_Tokens);
+			all_members[i] = colAndtok.Column;
+			if (!list_equations.get(i).getLeft_side().isEmpty()) {
+				ExpressionNode exp = parser.evaluate(list_equations.get(i)
+						.getLeft_side());
+				right_side[i] -= Double.parseDouble(exp.getValue());
+			}
+			if (list_equations.get(i).getRight_side() != null) {
+				if (!list_equations.get(i).getRight_side().isEmpty()) {
+					ExpressionNode exp = parser.evaluate(list_equations.get(i)
+							.getRight_side());
+					double member = Double.parseDouble(exp.getValue());
+					right_side[i] += member;
+				}
+			}
+		}
+		Matrix = new Matrix(all_members);
+		rightHandSide = new Matrix(right_side);	
 	}
 }

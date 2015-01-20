@@ -16,7 +16,7 @@
  */
 package ocr;
 
-import edu.sfsu.cs.orange.ocr.R;
+import tul.ocr.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
@@ -75,7 +75,7 @@ public final class HelpActivity extends Activity {
     // Show an OK button.
     View doneButton = findViewById(R.id.done_button);
     doneButton.setOnClickListener(doneListener);
-
+    
     if (page.equals(DEFAULT_PAGE)) {
       doneButton.setVisibility(View.VISIBLE);
     } else {

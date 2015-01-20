@@ -3,6 +3,7 @@ package ocr.solver;
 import ocr.CaptureActivity;
 import ocr.OcrResult;
 import ocr.parser.ParserException;
+import tul.ocr.R;
 import android.graphics.Typeface;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -10,7 +11,6 @@ import android.util.TypedValue;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
-import edu.sfsu.cs.orange.ocr.R;
 
 public class AsyncAnalyzeSolve extends AsyncTask<Void, Void, Boolean> {
 	private static final String TAG = AsyncAnalyzeSolve.class.getSimpleName();
@@ -20,15 +20,18 @@ public class AsyncAnalyzeSolve extends AsyncTask<Void, Void, Boolean> {
 	private View progressView;
 	private String resultText;
 	private String [] preAdjustedTexts;
-	private Solver solver;
+	private SolverBase solver;
 	
-	public AsyncAnalyzeSolve(CaptureActivity activity, OcrResult ocr_result){
-		preAdjustedTexts = ocr_result.getText().split("\\r?\\n");
+	public AsyncAnalyzeSolve(CaptureActivity activity, OcrResult ocr_result, boolean math, boolean superscripts, int option){
+		if(!math)
+			preAdjustedTexts = ocr_result.getText().split("\\r?\\n");
+		else
+			preAdjustedTexts = ocr_result.getText().split("\\n");
 		this.activity = activity;
 		textView = (TextView) activity.findViewById(R.id.translation_text_view);
 		solveTypeTextView = (TextView) activity.findViewById(R.id.translation_language_text_view);
 	    progressView = (View) activity.findViewById(R.id.indeterminate_progress_indicator_view);
-	    solver = new Solver();
+	    solver = SolverBase.getSolver(math, superscripts, option);
 	}
 	@Override
 	protected Boolean doInBackground(Void... params) {
@@ -40,6 +43,10 @@ public class AsyncAnalyzeSolve extends AsyncTask<Void, Void, Boolean> {
 			resultText = e.getMessage();
 			return false;
 		}catch(NotImplementedException e){
+			Log.e(TAG, e.getMessage());
+			resultText = e.getMessage();
+			return false;
+		}catch(Exception e){
 			Log.e(TAG, e.getMessage());
 			resultText = e.getMessage();
 			return false;

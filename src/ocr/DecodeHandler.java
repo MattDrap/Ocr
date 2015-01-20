@@ -19,11 +19,11 @@ package ocr;
 
 import ocr.BeepManager;
 import ocr.CaptureActivity;
+import tul.ocr.R;
 
 import com.googlecode.leptonica.android.ReadFile;
 import com.googlecode.tesseract.android.TessBaseAPI;
 
-import edu.sfsu.cs.orange.ocr.R;
 import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
@@ -57,21 +57,20 @@ final class DecodeHandler extends Handler {
     if (!running) {
       return;
     }
-    switch (message.what) {        
-    case R.id.ocr_continuous_decode:
-      // Only request a decode if a request is not already pending.
-      if (!isDecodePending) {
-        isDecodePending = true;
-        ocrContinuousDecode((byte[]) message.obj, message.arg1, message.arg2);
-      }
-      break;
-    case R.id.ocr_decode:
-      ocrDecode((byte[]) message.obj, message.arg1, message.arg2);
-      break;
-    case R.id.quit:
-      running = false;
-      Looper.myLooper().quit();
-      break;
+    int message_what = message.what;
+    if(message_what == R.id.ocr_continuous_decode){
+    	// Only request a decode if a request is not already pending.
+        if (!isDecodePending) {
+          isDecodePending = true;
+          ocrContinuousDecode((byte[]) message.obj, message.arg1, message.arg2);
+        }
+    }else if(message_what == R.id.ocr_decode){
+    	ocrDecode((byte[]) message.obj, message.arg1, message.arg2);
+    }else if(message_what == R.id.quit){
+    	running = false;
+        Looper.myLooper().quit();
+    }else if(message_what == R.id.ocr_decode_bitmap){
+    	ocrDecode((String) message.obj);
     }
   }
 
@@ -92,6 +91,18 @@ final class DecodeHandler extends Handler {
     
     // Launch OCR asynchronously, so we get the dialog box displayed immediately
     new OcrRecognizeAsyncTask(activity, baseApi, data, width, height).execute();
+  }
+  /**
+   *  Launch an AsyncTask to perform an OCR decode for load-bitmap mode.
+   *  
+   * @param filepath path to bitmap
+   */
+  private void ocrDecode(String filepath) {
+    beepManager.playBeepSoundAndVibrate();
+    activity.displayProgressDialog();
+    
+    // Launch OCR asynchronously, so we get the dialog box displayed immediately
+    new OcrRecognizeAsyncTask(activity, baseApi, filepath).execute();
   }
 
   /**

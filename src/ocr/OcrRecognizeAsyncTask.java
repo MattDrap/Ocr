@@ -1,5 +1,6 @@
 /*
  * Copyright 2011 Robert Theis
+ * Copyright 2014 Matìj Bartoš
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +16,18 @@
  */
 package ocr;
 
+import tul.ocr.R;
+
+import com.googlecode.leptonica.android.Binarize;
+import com.googlecode.leptonica.android.Enhance;
+import com.googlecode.leptonica.android.Pix;
 import com.googlecode.leptonica.android.ReadFile;
+import com.googlecode.leptonica.android.WriteFile;
 import com.googlecode.tesseract.android.TessBaseAPI;
 
-import edu.sfsu.cs.orange.ocr.R;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -32,7 +40,7 @@ import android.util.Log;
 final class OcrRecognizeAsyncTask extends AsyncTask<Void, Void, Boolean> {
 
   //  private static final boolean PERFORM_FISHER_THRESHOLDING = false; 
-  //  private static final boolean PERFORM_OTSU_THRESHOLDING = false; 
+  //  private static final boolean PERFORM_OTSU_THRESHOLDING = true; 
   //  private static final boolean PERFORM_SOBEL_THRESHOLDING = false; 
 
   private CaptureActivity activity;
@@ -42,6 +50,7 @@ final class OcrRecognizeAsyncTask extends AsyncTask<Void, Void, Boolean> {
   private int height;
   private OcrResult ocrResult;
   private long timeRequired;
+  private String filepath;
 
   OcrRecognizeAsyncTask(CaptureActivity activity, TessBaseAPI baseApi, byte[] data, int width, int height) {
     this.activity = activity;
@@ -49,23 +58,49 @@ final class OcrRecognizeAsyncTask extends AsyncTask<Void, Void, Boolean> {
     this.data = data;
     this.width = width;
     this.height = height;
+    this.filepath = "";
+  }
+  public OcrRecognizeAsyncTask(CaptureActivity activity, TessBaseAPI baseApi, String filepath) {
+	this.activity = activity;
+	this.baseApi = baseApi;
+	this.filepath = filepath;
   }
 
   @Override
   protected Boolean doInBackground(Void... arg0) {
     long start = System.currentTimeMillis();
-    Bitmap bitmap = activity.getCameraManager().buildLuminanceSource(data, width, height).renderCroppedGreyscaleBitmap();
+    Bitmap bitmap;
+    if (filepath.length() == 0){
+    	bitmap = activity.getCameraManager().buildLuminanceSource(data, width, height).renderCroppedGreyscaleBitmap();
+    }else{
+    	bitmap = BitmapFactory.decodeFile(filepath);
+    	bitmap = bitmap.copy(Config.ARGB_8888, true);
+    	if(bitmap == null)
+    		return false;
+    }
     String textResult;
-
+    Pix pix_bitmap;
+    
+    try{
+    	pix_bitmap = ReadFile.readBitmap(bitmap);
+    }catch(RuntimeException e){
+    	return false;
+    }
+    /*try{
+        pix_bitmap = Enhance.pixEqualizeTRC(null, pix_bitmap, 1f, 1);
+        bitmap = WriteFile.writeBitmap(pix_bitmap);
+    }catch(IllegalArgumentException | OutOfMemoryError e){
+    	pix_bitmap = ReadFile.readBitmap(bitmap);
+    }*/
     //      if (PERFORM_FISHER_THRESHOLDING) {
     //        Pix thresholdedImage = Thresholder.fisherAdaptiveThreshold(ReadFile.readBitmap(bitmap), 48, 48, 0.1F, 2.5F);
     //        Log.e("OcrRecognizeAsyncTask", "thresholding completed. converting to bmp. size:" + bitmap.getWidth() + "x" + bitmap.getHeight());
     //        bitmap = WriteFile.writeBitmap(thresholdedImage);
     //      }
     //      if (PERFORM_OTSU_THRESHOLDING) {
-    //        Pix thresholdedImage = Binarize.otsuAdaptiveThreshold(ReadFile.readBitmap(bitmap), 48, 48, 9, 9, 0.1F);
+    //    	pix_bitmap = Binarize.otsuAdaptiveThreshold(pix_bitmap, 24, 24, 3, 3, 0.1F);
     //        Log.e("OcrRecognizeAsyncTask", "thresholding completed. converting to bmp. size:" + bitmap.getWidth() + "x" + bitmap.getHeight());
-    //        bitmap = WriteFile.writeBitmap(thresholdedImage);
+    //        bitmap = WriteFile.writeBitmap(pix_bitmap);
     //      }
     //      if (PERFORM_SOBEL_THRESHOLDING) {
     //        Pix thresholdedImage = Thresholder.sobelEdgeThreshold(ReadFile.readBitmap(bitmap), 64);
@@ -74,11 +109,11 @@ final class OcrRecognizeAsyncTask extends AsyncTask<Void, Void, Boolean> {
     //      }
 
     try {     
-      baseApi.setImage(ReadFile.readBitmap(bitmap));
+      baseApi.setImage(pix_bitmap);
       textResult = baseApi.getUTF8Text();
       timeRequired = System.currentTimeMillis() - start;
 
-      // Check for failure to recognize text
+      //Check for failure to recognize text
       if (textResult == null || textResult.equals("")) {
         return false;
       }
